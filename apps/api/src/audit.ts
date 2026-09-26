@@ -1,7 +1,7 @@
 import type { PoolClient } from "pg";
 
 export async function recordAudit(
-  client: PoolClient,
+  client: Pick<PoolClient, "query">,
   input: {
     actorId?: string | null;
     action: string;
