@@ -13,12 +13,14 @@ import { commentRoutes } from "./routes/comments";
 import { reportRoutes } from "./routes/reports";
 import { moderationRoutes } from "./routes/moderation";
 
-export async function buildApp() {
+export async function buildApp(options: { logger?: boolean } = {}) {
   const app = Fastify({
-    logger: {
-      level: config.NODE_ENV === "production" ? "info" : "debug",
-      redact: ["req.headers.authorization", "req.headers.cookie", "res.headers.set-cookie"]
-    },
+    logger: options.logger === false
+      ? false
+      : {
+          level: config.NODE_ENV === "production" ? "info" : "debug",
+          redact: ["req.headers.authorization", "req.headers.cookie", "res.headers.set-cookie"]
+        },
     trustProxy: true,
     bodyLimit: 1024 * 1024
   });
@@ -52,15 +54,8 @@ export async function buildApp() {
     }
   });
 
-  await app.register(async (api) => {
-    api.register(authRoutes);
-    api.register(featureRoutes);
-    api.register(mediaRoutes);
-    api.register(commentRoutes);
-    api.register(reportRoutes);
-    api.register(moderationRoutes);
-  }, { prefix: "/api/v1" });
-
+  // Error handlers must be installed before routes are registered: routes
+  // capture the handler of their encapsulation context at registration time.
   app.setErrorHandler((error, request, reply) => {
     if (error instanceof ZodError) {
       return reply.code(400).send({
@@ -103,6 +98,15 @@ export async function buildApp() {
     detail: "Route not found",
     requestId: request.id
   }));
+
+  await app.register(async (api) => {
+    api.register(authRoutes);
+    api.register(featureRoutes);
+    api.register(mediaRoutes);
+    api.register(commentRoutes);
+    api.register(reportRoutes);
+    api.register(moderationRoutes);
+  }, { prefix: "/api/v1" });
 
   return app;
 }

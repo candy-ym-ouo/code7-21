@@ -4,6 +4,13 @@ import { config } from "./config";
 
 const { Pool } = pg;
 
+/**
+ * Minimal query interface shared by the connection pool and a transaction
+ * client. Storage-layer functions accept this so the same query can run
+ * standalone (pool) or inside a transaction (client) without changes.
+ */
+export type Queryable = Pick<PoolClient, "query">;
+
 export const pool = new Pool({
   connectionString: config.DATABASE_URL,
   max: 20,
